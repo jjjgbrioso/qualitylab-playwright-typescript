@@ -1,0 +1,19 @@
+node_modules/
+
+# Reports and failure artifacts (screenshots, videos, traces)
+reports/
+test-results/
+blob-report/
+playwright/.cache/
+
+# Credentials: never commit these
+.env
+.env.*
+!.env.example
+
+# Editors and OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db

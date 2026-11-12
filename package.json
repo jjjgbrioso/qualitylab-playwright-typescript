@@ -1,0 +1,29 @@
+{
+  "name": "qualitylab-playwright-typescript",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright Test UI and API-assisted automation for the QualityLab demo application.",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.12"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:chromium": "playwright test --project=chromium",
+    "test:firefox": "playwright test --project=firefox",
+    "test:webkit": "playwright test --project=webkit",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:ecommerce": "playwright test --grep @ecommerce",
+    "test:banking": "playwright test --grep @banking",
+    "test:travel": "playwright test --grep @travel",
+    "test:headed": "playwright test --project=chromium --headed --workers=1",
+    "typecheck": "tsc --noEmit",
+    "report": "playwright show-report reports/html",
+    "browsers": "playwright install chromium firefox webkit"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.0",
+    "@types/node": "24.19.2",
+    "typescript": "5.9.3"
+  }
+}
