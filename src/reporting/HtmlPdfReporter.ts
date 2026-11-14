@@ -33,6 +33,9 @@ interface Failure {
   title: string;
   browser: string;
   error: string;
+  /** The original PNG in test-results/. */
+  screenshotPath?: string;
+  /** What the report embeds: a smaller JPEG copy, or the PNG if it could not be converted. */
   screenshot?: string;
   video?: string;
   trace?: string;
@@ -71,6 +74,7 @@ export default class HtmlPdfReporter implements Reporter {
     const browsers = this.config.projects.map((project) => project.name).filter((name) => tests.some((test) => projectOf(test) === name));
     const rows = this.rows(tests);
     const failures = this.failures(tests);
+    await embedScreenshots(failures);
     const counts = { total: tests.length, passed: 0, failed: 0, flaky: 0, skipped: 0 };
     for (const test of tests) counts[outcomeOf(test)] += 1;
 
@@ -136,7 +140,7 @@ export default class HtmlPdfReporter implements Reporter {
         title: test.titlePath().slice(3).join(' › '),
         browser: projectOf(test),
         error: stripAnsi(last.errors.map((error) => error.message ?? error.value ?? '').join('\n\n')).trim(),
-        screenshot: screenshot && fs.existsSync(screenshot) ? `data:image/png;base64,${fs.readFileSync(screenshot).toString('base64')}` : undefined,
+        screenshotPath: screenshot && fs.existsSync(screenshot) ? screenshot : undefined,
         video: relativeLink(this.outputFolder, attachment('video')),
         trace: relativeLink(this.outputFolder, attachment('trace')),
       });
@@ -336,6 +340,34 @@ function moduleOf(file: string): string {
   const folder = file.split('/').at(-2) ?? 'tests';
   const names: Record<string, string> = { auth: 'Authentication', ecommerce: 'E-commerce', banking: 'Banking', travel: 'Travel' };
   return names[folder] ?? capitalize(folder);
+}
+
+/**
+ * Embeds each failure screenshot as a JPEG copy at most 1000 px wide (shrink-screenshots.cjs), which
+ * keeps the report and its PDF small. If conversion fails, the original PNG is embedded instead.
+ */
+async function embedScreenshots(failures: Failure[]): Promise<void> {
+  const paths = failures.map((failure) => failure.screenshotPath).filter((file): file is string => Boolean(file));
+  const jpegs: Record<string, string> = {};
+  const script = path.join(__dirname, 'shrink-screenshots.cjs');
+  // A few files per call keeps the command line well under the Windows length limit.
+  for (let start = 0; start < paths.length; start += 25) {
+    const batch = paths.slice(start, start + 25);
+    try {
+      const output = await new Promise<string>((resolve, reject) => {
+        execFile(process.execPath, [script, ...batch], { env: process.env, timeout: 120_000, maxBuffer: 256 * 1024 * 1024 }, (error, stdout, stderr) =>
+          error ? reject(new Error(stderr.trim() || error.message)) : resolve(stdout),
+        );
+      });
+      Object.assign(jpegs, JSON.parse(output) as Record<string, string>);
+    } catch {
+      // Fall back to the PNGs below.
+    }
+  }
+  for (const failure of failures) {
+    if (!failure.screenshotPath) continue;
+    failure.screenshot = jpegs[failure.screenshotPath] ?? `data:image/png;base64,${fs.readFileSync(failure.screenshotPath).toString('base64')}`;
+  }
 }
 
 /**
