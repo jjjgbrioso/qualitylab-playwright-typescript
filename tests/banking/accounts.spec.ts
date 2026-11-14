@@ -1,4 +1,5 @@
 import { expect, test } from '@fixtures';
+import { banking } from '@data/testData';
 
 test.describe('Account balances', { tag: '@banking' }, () => {
   test.beforeEach(async ({ signIn }) => {
@@ -26,7 +27,7 @@ test.describe('Account balances', { tag: '@banking' }, () => {
       expect(await bankingPage.accountBalanceCents(account.id), account.name).toBe(account.balanceCents);
     }
 
-    const checking = await bank.accountOfType('CHECKING');
+    const checking = await bank.accountOfType(banking.accountTypes.checking);
     await accountPage.goto(checking.id);
     expect(await accountPage.balanceCents()).toBe(checking.balanceCents);
     await expect(accountPage.transactions.or(accountPage.emptyState).first()).toBeVisible();

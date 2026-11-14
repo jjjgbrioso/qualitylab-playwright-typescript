@@ -1,0 +1,158 @@
+{
+  "_about": "Test inputs and expected messages for every spec. Values that change on the live site (prices, stock, balances, search results) are read from the API during the test instead. {placeholders} in messages are filled in by format() in testData.ts.",
+
+  "auth": {
+    "wrongPassword": "Wrong-Password-1!",
+    "moduleNames": {
+      "ecommerce": "E-commerce",
+      "banking": "Banking",
+      "travel": "Travel & Cruise"
+    },
+    "protectedPages": {
+      "cart": "/cart",
+      "orders": "/orders"
+    },
+    "messages": {
+      "signInTitle": "Sign in to {module}",
+      "invalidCredentials": "The email or password is incorrect.",
+      "chooseModule": "Choose a module.",
+      "signedInToOtherModule": "You are signed in to {module}"
+    }
+  },
+
+  "ecommerce": {
+    "shopPageSize": 12,
+    "products": {
+      "keyboard": { "id": "prod_0003", "name": "Vector Mechanical Keyboard", "searchTerm": "keyboard" },
+      "onSaleThrow": { "id": "prod_0009", "name": "Willow Knit Throw" },
+      "notebook": { "id": "prod_0027", "name": "Grid Dot Notebook" },
+      "markers": { "id": "prod_0029", "name": "Whiteboard Marker Pack" }
+    },
+    "categories": {
+      "books": "Books"
+    },
+    "search": {
+      "noMatchTerm": "no-such-product-xyz"
+    },
+    "priceRange": { "min": 20, "max": 40 },
+    "invalidPriceRange": { "min": 50, "max": 10 },
+    "sort": {
+      "cheapestFirst": "price_asc"
+    },
+    "cart": {
+      "addQuantity": 2,
+      "changedQuantity": 3,
+      "checkoutQuantity": 2
+    },
+    "cards": {
+      "approved": "4242 4242 4242 4242",
+      "declined": "4000 0000 0000 0002"
+    },
+    "checkout": {
+      "shipping": {
+        "fullName": "Playwright Tester",
+        "address": "200 Automation Street",
+        "city": "Sampletown",
+        "postcode": "00000",
+        "country": "United States"
+      },
+      "payment": {
+        "cardholderName": "Playwright Tester",
+        "expiry": "12/30",
+        "cvv": "123"
+      }
+    },
+    "orderStatuses": {
+      "paid": "PAID",
+      "cancelled": "CANCELLED"
+    },
+    "messages": {
+      "invalidPriceRange": "Maximum price must not be below the minimum price.",
+      "cardDeclined": "The card was declined. No payment was taken.",
+      "fullNameRequired": "Full name is required."
+    }
+  },
+
+  "banking": {
+    "accountTypes": {
+      "checking": "CHECKING",
+      "savings": "SAVINGS"
+    },
+    "transactionTypes": {
+      "deposit": "DEPOSIT",
+      "withdrawal": "WITHDRAWAL",
+      "transferOut": "TRANSFER_OUT"
+    },
+    "referencePrefix": "TXN-",
+    "maxSingleTransactionCents": 1000000,
+    "overBalanceByCents": 100,
+    "invalidTransfers": [
+      {
+        "name": "an account number that is not 10 digits",
+        "to": "12345",
+        "amount": "10.00",
+        "message": "Account number must be exactly 10 digits."
+      },
+      {
+        "name": "an account number nobody has",
+        "to": "9999999999",
+        "amount": "10.00",
+        "message": "No account matches this value."
+      },
+      {
+        "name": "the same account as the source",
+        "to": "{sourceAccount}",
+        "amount": "10.00",
+        "message": "Choose a different destination account."
+      },
+      {
+        "name": "an amount of zero",
+        "to": "{savingsAccount}",
+        "amount": "0",
+        "message": "Amount must be greater than zero."
+      }
+    ],
+    "apiErrors": {
+      "duplicateTransaction": "DUPLICATE_TRANSACTION"
+    },
+    "messages": {
+      "insufficientFunds": "The account balance is too low for this transaction.",
+      "overSingleTransactionLimit": "at most ₱10,000.00",
+      "duplicateTransaction": "An identical transaction was made in the last"
+    }
+  },
+
+  "travel": {
+    "leadGuest": "Playwright Tester",
+    "hotels": {
+      "kyoto": { "destination": "Kyoto", "names": ["Gion Townhouse Stay", "Sakura Garden Hotel"] },
+      "alfama": { "id": "hotel_0002", "rooms": ["room_0002_std", "room_0002_dlx", "room_0002_fam"] },
+      "soloRoom": { "hotelId": "hotel_0012", "roomId": "room_0012_std" }
+    },
+    "filter": { "minStars": 4, "amenity": "Pool" },
+    "noMatchDestination": "Atlantis",
+    "stays": {
+      "nights": 2,
+      "bookingNights": 3,
+      "maxNights": 30
+    },
+    "invalidDates": {
+      "checkOutBeforeCheckIn": { "checkInDaysFromToday": 60, "checkOutDaysFromToday": 58 },
+      "pastCheckIn": { "checkInDaysFromToday": -3, "checkOutDaysFromToday": 2 }
+    },
+    "bookingStatuses": {
+      "confirmed": "CONFIRMED",
+      "cancelled": "CANCELLED"
+    },
+    "apiErrors": {
+      "roomUnavailable": "ROOM_UNAVAILABLE"
+    },
+    "messages": {
+      "checkOutBeforeCheckIn": "Check-out must be after check-in.",
+      "pastCheckIn": "Check-in cannot be in the past.",
+      "soldOut": "This room is sold out for these dates.",
+      "guestLimit": "This room sleeps at most {maxGuests} guests.",
+      "stayTooLong": "A stay can be at most {maxNights} nights."
+    }
+  }
+}

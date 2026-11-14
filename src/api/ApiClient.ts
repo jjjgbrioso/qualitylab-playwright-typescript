@@ -1,6 +1,9 @@
 import { type APIRequestContext, type APIResponse, expect, request } from '@playwright/test';
 import type { ApiErrorBody, ApiPage, AppModule } from './types';
 
+/** The live site can answer slowly while several browsers run at once. */
+const API_TIMEOUT_MS = 30_000;
+
 type Query = Record<string, string | number | boolean | undefined>;
 
 /**
@@ -15,7 +18,7 @@ export class ApiClient {
 
   /** An API client without a session, for public endpoints such as products and hotels. */
   static async anonymous(apiBaseUrl: string): Promise<ApiClient> {
-    return new ApiClient(await request.newContext({ baseURL: `${apiBaseUrl}/` }), null);
+    return new ApiClient(await request.newContext({ baseURL: `${apiBaseUrl}/`, timeout: API_TIMEOUT_MS }), null);
   }
 
   /** Signs in to one module and sends the token as a Bearer header on every call. */
@@ -24,7 +27,7 @@ export class ApiClient {
     module: AppModule,
     credentials: { username: string; password: string },
   ): Promise<ApiClient> {
-    const login = await request.newContext({ baseURL: `${apiBaseUrl}/` });
+    const login = await request.newContext({ baseURL: `${apiBaseUrl}/`, timeout: API_TIMEOUT_MS });
     try {
       const response = await login.post('auth/login', {
         data: { email: credentials.username, password: credentials.password, module },
@@ -32,6 +35,7 @@ export class ApiClient {
       await expectOk(response, `API sign-in to ${module}`);
       const { token } = ((await response.json()) as { data: { token: string } }).data;
       const context = await request.newContext({
+        timeout: API_TIMEOUT_MS,
         baseURL: `${apiBaseUrl}/`,
         extraHTTPHeaders: { Authorization: `Bearer ${token}` },
       });

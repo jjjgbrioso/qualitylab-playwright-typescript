@@ -1,7 +1,7 @@
 import { expect, test } from '@fixtures';
-import { categories, products } from '@data/testData';
+import { ecommerce } from '@data/testData';
 
-const SHOP_PAGE_SIZE = 12;
+const { products, categories, priceRange, invalidPriceRange, messages } = ecommerce;
 
 /** Search and filters. Expected results come from the API, so they stay right if the catalogue changes. */
 test.describe('Product search and filters', { tag: '@ecommerce' }, () => {
@@ -19,7 +19,7 @@ test.describe('Product search and filters', { tag: '@ecommerce' }, () => {
   });
 
   test('a search with no matches shows the empty state', { tag: '@negative' }, async ({ shopPage }) => {
-    await shopPage.search('no-such-product-xyz');
+    await shopPage.search(ecommerce.search.noMatchTerm);
 
     await expect(shopPage.emptyState).toBeVisible();
     await expect(shopPage.cards).toHaveCount(0);
@@ -34,17 +34,17 @@ test.describe('Product search and filters', { tag: '@ecommerce' }, () => {
   });
 
   test('filter by price range keeps every price inside the range', async ({ shopPage, api }) => {
-    await shopPage.filter({ minPrice: 20, maxPrice: 40 });
+    await shopPage.filter({ minPrice: priceRange.min, maxPrice: priceRange.max });
 
     const prices = await shopPage.prices();
     expect(prices.length).toBeGreaterThan(0);
     for (const price of prices) {
-      expect(price).toBeGreaterThanOrEqual(2000);
-      expect(price).toBeLessThanOrEqual(4000);
+      expect(price).toBeGreaterThanOrEqual(priceRange.min * 100);
+      expect(price).toBeLessThanOrEqual(priceRange.max * 100);
     }
-    // The shop shows 12 products per page; the count above the grid gives the full total.
-    const expected = await (await api.catalog()).products({ minPrice: 20, maxPrice: 40 });
-    expect(prices).toHaveLength(Math.min(expected.length, SHOP_PAGE_SIZE));
+    // The shop shows one page of products; the count above the grid gives the full total.
+    const expected = await (await api.catalog()).products({ minPrice: priceRange.min, maxPrice: priceRange.max });
+    expect(prices).toHaveLength(Math.min(expected.length, ecommerce.shopPageSize));
     await expect(shopPage.resultCount).toContainText(String(expected.length));
   });
 
@@ -61,13 +61,13 @@ test.describe('Product search and filters', { tag: '@ecommerce' }, () => {
   });
 
   test('a maximum price below the minimum is refused', { tag: '@negative' }, async ({ shopPage }) => {
-    await shopPage.filter({ minPrice: 50, maxPrice: 10 });
+    await shopPage.filter({ minPrice: invalidPriceRange.min, maxPrice: invalidPriceRange.max });
 
-    await expect(shopPage.filterError).toHaveText('Maximum price must not be below the minimum price.');
+    await expect(shopPage.filterError).toHaveText(messages.invalidPriceRange);
   });
 
   test('sort by price puts the cheapest product first', async ({ shopPage }) => {
-    await shopPage.sortBy('price_asc');
+    await shopPage.sortBy(ecommerce.sort.cheapestFirst);
 
     const prices = await shopPage.prices();
     expect(prices.length).toBeGreaterThan(1);

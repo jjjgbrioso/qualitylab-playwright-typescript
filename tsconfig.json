@@ -15,15 +15,14 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "baseUrl": ".",
     "paths": {
-      "@api/*": ["src/api/*"],
-      "@config/*": ["src/config/*"],
-      "@data/*": ["src/data/*"],
-      "@fixtures": ["src/fixtures/index.ts"],
-      "@fixtures/*": ["src/fixtures/*"],
-      "@pages/*": ["src/pages/*"],
-      "@utils/*": ["src/utils/*"]
+      "@api/*": ["./src/api/*"],
+      "@config/*": ["./src/config/*"],
+      "@data/*": ["./src/data/*"],
+      "@fixtures": ["./src/fixtures/index.ts"],
+      "@fixtures/*": ["./src/fixtures/*"],
+      "@pages/*": ["./src/pages/*"],
+      "@utils/*": ["./src/utils/*"]
     }
   },
   "include": ["playwright.config.ts", "src/**/*.ts", "tests/**/*.ts"]
