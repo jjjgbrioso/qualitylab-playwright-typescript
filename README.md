@@ -50,7 +50,10 @@ playwright-typescript/
 │   │   ├── ecommerce/          Shop, product, cart, checkout, orders, order
 │   │   ├── banking/            Dashboard, deposit/withdrawal/transfer, account
 │   │   └── travel/             Hotels, hotel, room, booking
-│   ├── data/testData.ts        Seeded products, hotels, test cards, checkout details
+│   ├── data/
+│   │   ├── test-data.json      All test inputs and expected messages, by module
+│   │   └── testData.ts         Typed loader for the JSON, plus format() and checkoutDetails()
+│   ├── reporting/              Summary reporter: HTML with a Download PDF button, and the PDF
 │   └── utils/                  Money parsing, stay dates, random amounts, cross-process lock
 └── tests/                      Spec files by module
 ```
@@ -63,6 +66,10 @@ playwright-typescript/
   - `api` creates API sessions on demand (`api.catalog()`, `api.shop()`, `api.bank()`, `api.travel()`) for setup and for checking results.
   - `exclusive(resource)` waits for and holds a shared resource (see below).
   - `cleanup.add(...)` registers undo steps, such as cancelling an order or booking. They run after the test even when it fails.
+- **Test data in JSON.** Every input and expected message lives in `src/data/test-data.json`, grouped by `auth`, `ecommerce`, `banking` and `travel`. This covers product and hotel ids, search terms, price ranges, quantities, test cards, checkout details, stay lengths, invalid inputs, statuses and error texts. Spec files contain no hard-coded values. They import the data through `src/data/testData.ts`, for example `import { ecommerce } from '@data/testData'`.
+  - Messages with a number use `{placeholders}`, filled with `format()`, for example `format(travel.messages.guestLimit, { maxGuests: 2 })`.
+  - The invalid-transfer cases are a list in the JSON (`banking.invalidTransfers`). Adding a row adds a test.
+  - Framework settings stay in code: random amount and date ranges in `src/utils`, lock timings, and the environment defaults in `src/config/env.ts`.
 - **API-assisted tests.** Expected search and filter results, prices and balances come from the API at run time, so tests stay correct when live data changes. Orders and bookings for the history and cancel tests are created through the API, which is faster than the UI.
 - **Explicit waits only.** Playwright's auto-waiting and web-first assertions (`expect(locator).toHaveText(...)`). No fixed sleeps.
 
@@ -153,10 +160,36 @@ $env:TEST_ENV = "local"
 
 | Output | Contents |
 | --- | --- |
+| `reports/summary/test-report.html` | **Summary report of the latest run**, with a **Download PDF** button. Open it with `npm run report:summary`. |
+| `reports/summary/test-report.pdf` | The same summary as a PDF (A4, page numbers) |
+| `reports/history/<date-time>/` | The summary HTML and PDF of every earlier run |
 | `reports/html/` | Playwright HTML report. Open it with `npm run report`. |
 | `reports/results.json` | Results as JSON |
 | `reports/junit.xml` | JUnit XML for CI tools |
 | `test-results/<test>/` | For each failed test: `test-failed-1.png` (screenshot), `video.webm`, and `trace.zip` |
+
+### The summary report
+
+Every run, whatever is selected (all tests, one browser, one file, the VS Code extension), ends by writing the summary report. It is made by a custom reporter, `src/reporting/HtmlPdfReporter.ts`, registered in `playwright.config.ts`. It shows:
+
+- **Run details:** date and time, environment and site, browsers, workers, duration, and whether the run passed
+- **Totals:** test runs, passed, failed, flaky, skipped, pass rate
+- **One table per module:** one row per test, one column per browser, with the result and time of each
+- **Failures:** the error message, the screenshot from the moment of failure (embedded, so it is in the PDF too), and links to the video and trace
+
+The **Download PDF** button saves the PDF. The PDF is printed at the end of the run by Playwright's own Chromium (`src/reporting/print-pdf.cjs`), so no other tools are needed, and it is embedded in the button, so the download works in any browser, even from a local file. The PDF leaves out the buttons and links, and adds page numbers. Session tokens in error messages are replaced with `[hidden]`.
+
+**The report opens in Google Chrome when the run finishes.** If Chrome is not installed, it opens in the default browser. Change this with `OPEN_REPORT` in `.env`:
+
+| `OPEN_REPORT` | When the report opens |
+| --- | --- |
+| `always` (default) | After every run, including single tests run from VS Code |
+| `on-failure` | Only when a test failed |
+| `never` | Never. Open it yourself with `npm run report:summary`. |
+
+It never opens on CI (when `CI` is set). Set `CHROME_PATH` if Chrome is installed somewhere unusual.
+
+Each run also copies its summary to `reports/history/<date-time>/`. Delete old folders there when you no longer need them. The video and trace links point into `test-results/`, which the next run clears, so they only work in the latest report.
 
 Screenshots, videos and traces are kept only for failed tests (`only-on-failure` / `retain-on-failure`), so passing runs stay small. The HTML report links to each one.
 

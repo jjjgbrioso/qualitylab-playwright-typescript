@@ -19,6 +19,7 @@
     "test:headed": "playwright test --project=chromium --headed --workers=1",
     "typecheck": "tsc --noEmit",
     "report": "playwright show-report reports/html",
+    "report:summary": "node src/reporting/open-summary.cjs",
     "browsers": "playwright install chromium firefox webkit"
   },
   "devDependencies": {

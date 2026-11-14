@@ -24,6 +24,8 @@ export default defineConfig({
     ['html', { outputFolder: 'reports/html', open: 'never' }],
     ['json', { outputFile: 'reports/results.json' }],
     ['junit', { outputFile: 'reports/junit.xml' }],
+    // One-page summary of every run as HTML with a "Download PDF" button, plus the PDF itself.
+    ['./src/reporting/HtmlPdfReporter.ts', { outputFolder: 'reports/summary', historyFolder: 'reports/history' }],
   ],
 
   use: {
