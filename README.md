@@ -1,5 +1,8 @@
 # QualityLab: Playwright TypeScript framework
 
+> Part of **[QualityLab](https://github.com/jjjgbrioso/QualityLab)**, a QA portfolio project. The app under test is live at https://quality-lab-jb.vercel.app.
+> Test projects: [Selenium Java](https://github.com/jjjgbrioso/qualitylab-selenium-java) · [Playwright TypeScript](https://github.com/jjjgbrioso/qualitylab-playwright-typescript) · [Postman + Newman](https://github.com/jjjgbrioso/qualitylab-api-testing) · [JMeter](https://github.com/jjjgbrioso/qualitylab-jmeter)
+
 UI tests for the deployed QualityLab site, with API-assisted setup and checks, written with Playwright Test and TypeScript. They run in Chromium, Firefox and WebKit, in parallel.
 
 The framework is independent of the web application and of the Selenium Java framework. It only drives the site through a browser and its public REST API (`/api/v1`).
@@ -10,6 +13,19 @@ The framework is independent of the web application and of the Selenium Java fra
 | Runner | Playwright Test 1.65 |
 | Runtime | Node.js 20.12 or newer (developed on Node 24) |
 | Package manager | npm |
+
+## Sample reports
+
+Run against the deployed site on 14 November 2026.
+
+| Run | Result | Report |
+| --- | --- | --- |
+| Fully passed | **141 of 141 passed** (100%), 0 flaky, in Chromium, Firefox and WebKit, 3m 23s | [PDF](docs/test-reports/passed/test-report.pdf) · [HTML](docs/test-reports/passed/test-report.html) |
+| With failures | 25 of 33 passed, **8 failed** (75.8%). **A demonstration:** the read-only search and filter tests were run with a deliberately strict 4-second limit per test (`--timeout=4000`, no retries), so the slower ones fail with "Test timeout of 4000ms exceeded". | [PDF](docs/test-reports/failed/test-report.pdf) · [HTML](docs/test-reports/failed/test-report.html) |
+
+What a report contains: the run details (date, environment, browsers, duration), the totals and pass rate, one table per module with each test's result and time, and for each failure the error message and the screenshot taken when it failed. Open the **PDF** links to read a report on GitHub; GitHub shows HTML files as source code, so download an HTML file and open it in a browser.
+
+The **Video**, **Trace** and **Full Playwright report** links in a report only work on the machine that ran the tests, because they point into its local `test-results` folder.
 
 ## What is tested
 
