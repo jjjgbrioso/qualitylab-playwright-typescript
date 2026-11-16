@@ -172,6 +172,10 @@ $env:TEST_ENV = "local"
 | Interactive UI mode | `npx playwright test --ui` |
 | Type-check | `npm run typecheck` |
 
+### Continuous integration
+
+GitHub Actions ([`.github/workflows/ui-tests.yml`](.github/workflows/ui-tests.yml)) type-checks the suite and runs it in Chromium on every pull request and push to `main`. It builds a throwaway copy of QualityLab with a fresh PostgreSQL database on GitHub's machine, starts it on port 3100 (`TEST_ENV=local`) and signs in with the app's seed test customer, so it never touches the live site. Reports, screenshots, videos and traces are saved with each run as the `playwright-reports` artifact.
+
 ## Reports and failure evidence
 
 | Output | Contents |

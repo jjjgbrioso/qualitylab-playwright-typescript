@@ -1,0 +1,125 @@
+# Runs the Playwright suite against a throwaway copy of QualityLab built on this machine
+# (LOCAL target, http://localhost:3100) with a fresh PostgreSQL. It never touches the live site or its database.
+# Pull requests run Chromium; the nightly run in the QualityLab repo covers Firefox and WebKit.
+name: UI tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ui-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  playwright:
+    name: Playwright (Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: qualitylab
+          POSTGRES_PASSWORD: qualitylab_ci
+          POSTGRES_DB: qualitylab_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U qualitylab"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      # Settings for the throwaway app, the same as the app's LOCAL environment.
+      APP_ENV: local
+      DATABASE_URL: postgresql://qualitylab:qualitylab_ci@localhost:5432/qualitylab_ci
+      JWT_EXPIRES_IN_SECONDS: "7200"
+      DUPLICATE_WINDOW_SECONDS: "30"
+      NEXT_TELEMETRY_DISABLED: "1"
+      TEST_ENV: local
+
+    steps:
+      - name: Check out the UI tests
+        uses: actions/checkout@v5
+
+      - name: Check out the QualityLab app
+        uses: actions/checkout@v5
+        with:
+          repository: jjjgbrioso/QualityLab
+          path: qualitylab
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            qualitylab/web-app/package-lock.json
+
+      - name: Create a random signing secret for this run
+        run: echo "JWT_SECRET=$(openssl rand -base64 48)" >> "$GITHUB_ENV"
+
+      - name: Build the app and load the seed data
+        working-directory: qualitylab/web-app
+        run: |
+          npm ci
+          npx prisma migrate deploy
+          npm run db:seed
+          npm run build
+
+      - name: Start the app on port 3100
+        working-directory: qualitylab/web-app
+        run: |
+          nohup npm run start -- -p 3100 > "$RUNNER_TEMP/app.log" 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3100/api/v1/health > /dev/null; then echo "App is up"; exit 0; fi
+            sleep 2
+          done
+          echo "The app did not start:"; cat "$RUNNER_TEMP/app.log"; exit 1
+
+      # The test customer is the app's public seed account, which exists only in this throwaway database.
+      # Reading it from the seed file keeps it in sync and keeps the password out of this repo.
+      - name: Use the seed test customer
+        run: |
+          node <<'EOF'
+          const fs = require('node:fs');
+          const seed = fs.readFileSync('qualitylab/web-app/scripts/seed-data.ts', 'utf8');
+          const match = seed.match(/CUSTOMER_PASSWORD\s*=\s*"([^"]+)"/);
+          if (!match) throw new Error('CUSTOMER_PASSWORD not found in seed-data.ts');
+          console.log(`::add-mask::${match[1]}`);
+          fs.appendFileSync(process.env.GITHUB_ENV, `TEST_USERNAME=alice@qualitylab.test\nTEST_PASSWORD=${match[1]}\n`);
+          EOF
+
+      - name: Install the tests and Chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Run the UI tests
+        run: npm run test:chromium
+
+      - name: Save the reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-reports
+          path: |
+            reports/
+            test-results/
+          if-no-files-found: ignore
+
+      - name: Show the app log
+        if: failure()
+        run: tail -n 100 "$RUNNER_TEMP/app.log" || true
